@@ -58,35 +58,67 @@ router.get('/patient/:patientId', authenticateToken, async (req, res) => {
   }
 });
 
-// Get past sessions (completed sessions and cancelled sessions)
+// Get past sessions (completed/cancelled sessions + unmarked sessions before today)
 router.get('/past', authenticateToken, asyncHandler(async (req, res) => {
   const { includeCancelled } = req.query;
+  const today = new Date().toISOString().split('T')[0];
   
   let query = { userId: req.userId };
   
   if (includeCancelled === 'true') {
-    // Include both completed and cancelled sessions
+    // Include: completed sessions (any date), cancelled sessions (any date), and unmarked sessions before today
     query.$or = [
-      { completed: true },
-      { cancelled: true }
+      { completed: true }, // Completed sessions (including today's completed)
+      { cancelled: true }, // Cancelled sessions (including today's cancelled)
+      { 
+        date: { $lt: today }, // Unmarked sessions before today
+        completed: false,
+        cancelled: false
+      }
     ];
   } else {
-    // Default: only completed sessions
-    query.completed = true;
+    // Default: completed sessions (any date) and unmarked sessions before today (exclude cancelled)
+    query.$or = [
+      { completed: true }, // Completed sessions (including today's completed)
+      { 
+        date: { $lt: today }, // Unmarked sessions before today
+        completed: false,
+        cancelled: false
+      }
+    ];
   }
 
   const sessions = await Session.find(query)
-    .sort({ date: -1, time: -1 })
+    .sort({ date: -1, time: 1 })
     .lean();
 
   const transformedSessions = transformDocuments(sessions);
   sendSuccess(res, { sessions: transformedSessions });
 }));
 
-// Get upcoming sessions (incomplete and non-cancelled sessions)
-router.get('/upcoming', authenticateToken, asyncHandler(async (req, res) => {
+// Get today's sessions (all sessions for today - unmarked, completed, and cancelled)
+router.get('/today', authenticateToken, asyncHandler(async (req, res) => {
+  const today = new Date().toISOString().split('T')[0];
+  
   const sessions = await Session.find({
     userId: req.userId,
+    date: today // All of today's sessions (unmarked, completed, and cancelled)
+  }).sort({ time: 1 }).lean();
+
+  const transformedSessions = transformDocuments(sessions);
+  sendSuccess(res, { sessions: transformedSessions });
+}));
+
+// Get upcoming sessions (incomplete and non-cancelled sessions from tomorrow onwards)
+router.get('/upcoming', authenticateToken, asyncHandler(async (req, res) => {
+  const today = new Date().toISOString().split('T')[0];
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  
+  const sessions = await Session.find({
+    userId: req.userId,
+    date: { $gte: tomorrowStr }, // Only future dates (tomorrow onwards)
     completed: false,
     cancelled: false
   }).sort({ date: 1, time: 1 }).lean();
@@ -236,6 +268,14 @@ router.put('/:id', authenticateToken, async (req, res) => {
     if (completed !== undefined) session.completed = completed;
     if (cancelled !== undefined) session.cancelled = cancelled;
     if (amount !== undefined) session.amount = amount;
+
+    console.log('Updating session:', {
+      sessionId: req.params.id,
+      userId: req.userId,
+      completed,
+      amount,
+      oldAmount: session.amount
+    });
 
     await session.save();
 

@@ -3,6 +3,8 @@
  * Single Responsibility: Handle database operations and queries
  */
 
+const mongoose = require('mongoose');
+
 /**
  * Build date range query for MongoDB
  * @param {string} startDate - Start date (YYYY-MM-DD)
@@ -58,9 +60,9 @@ const buildSessionFilterQuery = (userId, filters = {}) => {
  */
 const buildEarningsPipeline = (userId, startDate, endDate) => {
   const matchStage = { 
-    userId,
+    userId: new mongoose.Types.ObjectId(userId),
     completed: true,
-    amount: { $exists: true, $gt: 0 }
+    amount: { $exists: true, $ne: null, $gt: 0 }
   };
   
   if (startDate || endDate) {
@@ -72,13 +74,26 @@ const buildEarningsPipeline = (userId, startDate, endDate) => {
   return [
     { $match: matchStage },
     {
+      $addFields: {
+        // Extract year and month from date string (format: YYYY-MM-DD)
+        year: { $toInt: { $substr: ['$date', 0, 4] } },
+        month: { $substr: ['$date', 5, 2] }
+      }
+    },
+    {
       $group: {
         _id: {
-          year: { $year: { $dateFromString: { dateString: '$date' } } },
-          month: { $month: { $dateFromString: { dateString: '$date' } } }
+          year: '$year',
+          month: '$month'
         },
         totalEarnings: { $sum: '$amount' },
         sessionCount: { $sum: 1 }
+      }
+    },
+    {
+      $addFields: {
+        year: '$_id.year',
+        month: '$_id.month'
       }
     },
     { $sort: { '_id.year': -1, '_id.month': -1 } }
