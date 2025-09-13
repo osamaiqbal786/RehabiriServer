@@ -22,21 +22,6 @@ class PatientService {
     return transformDocuments(patients);
   }
 
-  /**
-   * Get patient by ID
-   * @param {string} patientId - Patient ID
-   * @param {string} userId - User ID
-   * @returns {Promise<Object|null>} Patient object or null
-   */
-  static async getPatientById(patientId, userId) {
-    const patient = await Patient.findOne({
-      _id: patientId,
-      userId
-    });
-
-    if (!patient) return null;
-    return transformDocuments([patient])[0];
-  }
 
   /**
    * Create a new patient

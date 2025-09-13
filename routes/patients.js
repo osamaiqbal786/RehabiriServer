@@ -12,19 +12,6 @@ router.get('/', authenticateToken, asyncHandler(async (req, res) => {
   sendSuccess(res, { patients });
 }));
 
-// Get patient by ID
-router.get('/:id', authenticateToken, asyncHandler(async (req, res) => {
-  if (!isValidObjectId(req.params.id)) {
-    return sendValidationError(res, 'Invalid patient ID format');
-  }
-
-  const patient = await PatientService.getPatientById(req.params.id, req.userId);
-  if (!patient) {
-    return sendNotFoundError(res, 'Patient');
-  }
-
-  sendSuccess(res, { patient });
-}));
 
 // Create new patient
 router.post('/', authenticateToken, asyncHandler(async (req, res) => {
