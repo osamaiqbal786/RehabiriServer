@@ -7,7 +7,14 @@ const router = express.Router();
 // Register new user
 router.post('/register', async (req, res) => {
   try {
-    const { email, phoneNumber, password, profileImage } = req.body;
+    const { 
+      email, 
+      name, 
+      phoneNumber, 
+      password, 
+      address,
+      highestQualification 
+    } = req.body;
 
     // Check if user already exists
     const existingUser = await User.findOne({ email });
@@ -34,9 +41,11 @@ router.post('/register', async (req, res) => {
     // Create new user
     const user = new User({
       email,
+      name,
       phoneNumber,
       password: hashedPassword,
-      profileImage
+      address,
+      highestQualification
     });
 
     await user.save();
@@ -137,7 +146,13 @@ router.put('/profile', async (req, res) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { email, phoneNumber, profileImage } = req.body;
+    const { 
+      email, 
+      name, 
+      phoneNumber, 
+      address, 
+      highestQualification 
+    } = req.body;
 
     const user = await User.findById(decoded.userId);
     if (!user) {
@@ -146,8 +161,10 @@ router.put('/profile', async (req, res) => {
 
     // Update fields
     if (email) user.email = email;
+    if (name) user.name = name;
     if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (profileImage !== undefined) user.profileImage = profileImage;
+    if (address) user.address = address;
+    if (highestQualification) user.highestQualification = highestQualification;
 
     await user.save();
 

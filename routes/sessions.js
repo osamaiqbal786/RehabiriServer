@@ -269,14 +269,6 @@ router.put('/:id', authenticateToken, async (req, res) => {
     if (cancelled !== undefined) session.cancelled = cancelled;
     if (amount !== undefined) session.amount = amount;
 
-    console.log('Updating session:', {
-      sessionId: req.params.id,
-      userId: req.userId,
-      completed,
-      amount,
-      oldAmount: session.amount
-    });
-
     await session.save();
 
     res.json({

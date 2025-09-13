@@ -8,6 +8,11 @@ const userSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
   phoneNumber: {
     type: String,
     required: true,
@@ -17,9 +22,31 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  profileImage: {
+  address: {
+    houseNumber: {
+      type: String,
+      trim: true
+    },
+    area: {
+      type: String,
+      trim: true
+    },
+    pincode: {
+      type: String,
+      trim: true
+    },
+    city: {
+      type: String,
+      trim: true
+    },
+    state: {
+      type: String,
+      trim: true
+    }
+  },
+  highestQualification: {
     type: String,
-    default: null
+    trim: true
   }
 }, {
   timestamps: true
